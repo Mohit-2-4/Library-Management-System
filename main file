@@ -1,0 +1,432 @@
+#include "headers.h"
+
+class StudentRecord {
+public:
+    string student_name;
+    int user_regno;
+    string book_name;
+    bool is_returned;
+
+    void save_record() {
+        ofstream myfile("student_records.txt", std::ios::app);
+        if (myfile.is_open()) {
+            myfile << student_name << ", " << user_regno << ", " << book_name << ", " << (is_returned ? "Returned" : "Not Returned") << "\n";
+            myfile.close();
+        } else {
+            cout << "Unable to open file for writing student records" << endl;
+        }
+
+    }
+
+    bool has_issued_books(int reg_no) {
+        ifstream infile("student_records.txt");
+        string line;
+        while (getline(infile, line)) {
+            if (line.find(std::to_string(reg_no)) != string::npos && line.find("Not Returned") != string::npos) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+class lms {
+public:
+    int user_regno = 0;
+    string admin_pass = "admin@123";
+    int available_books = 5;
+    int issued_books = 0;
+    string student_name = "";
+};
+
+class record : public lms {
+    string book_name = "";
+    int amount = 0;
+    string author = "";
+    string isbn_number = "";
+
+public:
+    void add_bookinfo() {
+        cin.ignore();
+        cout << "Enter the name of the book: " << endl;
+        getline(cin, book_name);
+        cout << "How many books do you want to add? " << endl;
+        cin >> amount;
+        cin.ignore();
+        cout << "Enter the name of the author: " << endl;
+        getline(cin, author);
+        cout << "Enter the ISBN number: " << endl;
+        getline(cin, isbn_number);
+
+        ofstream myfile("book_storage.txt", std::ios::app);
+        if (myfile.is_open())
+        {
+            myfile << book_name << ", " << amount << ", " << author << ", " << isbn_number << "\n";
+            myfile.close();
+            cout << "Book(s) added successfully!!" << endl;
+        }
+        else
+            cout << "Unable to open file for writing" << endl;
+    }
+
+    void delete_bookinfo() {
+        cin.ignore();
+        cout << "What is the ISBN number of the book you want to delete? " << endl;
+        getline(cin, isbn_number);
+
+        ifstream infile("book_storage.txt");
+        ofstream tempfile("temp.txt");
+        string line;
+        bool flag = false;
+        while (getline(infile, line))
+        {
+            if (line.find(isbn_number) == string::npos)
+                tempfile << line << '\n';
+            else
+                flag = true;
+        }
+        infile.close();
+        tempfile.close();
+        remove("book_storage.txt");
+        rename("temp.txt", "book_storage.txt");
+
+        if (flag)
+            cout << "Book(s) deleted successfully!!" << endl;
+        else
+            cout << "Book not found!!" << endl;
+    }
+
+    void add_amount() {
+        cin.ignore();
+        cout << "How many books do you want to add? ";
+        int extra;
+        cin >> extra;
+        amount += extra;
+        cout << "Book(s) added successfully. New amount is: " << amount << endl;
+    }
+
+    void subtract_amount() {
+        cin.ignore();
+        cout << "How many books do you want to remove? ";
+        int mii;
+        cin >> mii;
+        amount -= mii;
+        cout << "Book(s) deleted successfully. New amount is: " << amount << endl;
+    }
+
+    void update_bookinfo() {
+        cin.ignore();
+        cout << "Enter the ISBN number of the book you want to update: " << endl;
+        getline(cin, isbn_number);
+
+        ifstream infile("book_storage.txt");
+        ofstream tempfile("temp.txt");
+        string line;
+        bool flag = false;
+
+        while (getline(infile, line)) {
+            if (line.find(isbn_number) != string::npos) {
+                flag = true;
+                std::istringstream iss(line);
+                string name, amount_str, author, isbn;
+                getline(iss, name, ',');
+                getline(iss, amount_str, ',');
+                getline(iss, author, ',');
+                getline(iss, isbn, ',');
+
+                int current_amount = std::stoi(amount_str);
+
+                cout << "\n1. Add amount of books.\n2. Subtract the amount.\n3. to exit.\n";
+                char option;
+                cin >> option;
+
+                switch (option) {
+                    case '1': {
+                        int extra;
+                        cout << "How many books do you want to add? ";
+                        cin >> extra;
+                        current_amount += extra;
+                        cout << "Book(s) added successfully. New amount is: " << current_amount << endl;
+                        break;
+                    }
+                    case '2': {
+                        int remove;
+                        cout << "How many books do you want to remove? ";
+                        cin >> remove;
+                        if (remove > current_amount) {
+                            cout << "Cannot remove more books than available. Current amount: " << current_amount << endl;
+                            break;
+                        }
+                        current_amount -= remove;
+                        cout << "Book(s) removed successfully. New amount is: " << current_amount << endl;
+                        break;
+                    }
+                    case '3':
+                        exit(0);
+                    default:
+                        cout << "Invalid Input, try again." << endl;
+                        return;
+                }
+
+                tempfile << name << "," << current_amount << "," << author << "," << isbn << '\n';
+            } else {
+                tempfile << line << '\n';
+            }
+        }
+
+        infile.close();
+        tempfile.close();
+
+        remove("book_storage.txt");
+        rename("temp.txt", "book_storage.txt");
+
+        if (flag) {
+            cout << "Book information updated successfully!" << endl;
+        } else {
+            cout << "Book not found!" << endl;
+        }
+    }
+
+    void update_student_record() {
+        ifstream infile("student_records.txt");
+        ofstream tempfile("temp.txt");
+        string line;
+        bool found = false;
+
+        while (getline(infile, line)) {
+            if (line.find(book_name) != string::npos && line.find(std::to_string(user_regno)) != string::npos) {
+                found = true;
+                string updated_line = line.substr(0, line.rfind(',')) + ",Returned\n";
+                tempfile << updated_line;
+            } else {
+                tempfile << line << '\n';
+            }
+        }
+
+        infile.close();
+        tempfile.close();
+        remove("student_records.txt");
+        rename("temp.txt", "student_records.txt");
+
+        if (found) {
+            cout << "Student record updated successfully!" << endl;
+        } else {
+            cout << "Student record not found!" << endl;
+        }
+    }
+
+    void issue_book(StudentRecord& student) {
+        cin.ignore();
+        cout << "Which Book do you want to issue? ";
+        getline(cin, book_name);
+        sleep(1);
+
+        bool flag = false;
+        ifstream fin("book_storage.txt");
+        ofstream temp("temp.txt");
+        string str;
+        int aam = 0;
+        if (fin.is_open() && temp.is_open()) {
+            while (getline(fin, str)) {
+                if (str.find(book_name) != string::npos) {
+                    istringstream iss(str);
+                    string name, amount_str, author, isbn;
+                    getline(iss, name, ',');
+                    getline(iss, amount_str, ',');
+                    getline(iss, author, ',');
+                    getline(iss, isbn, ',');
+                    aam = std::stoi(amount_str);
+
+                    if (aam > 0) {
+                        flag = true;
+                        aam--;
+                        temp << name << "," << aam << "," << author << "," << isbn << '\n';
+                        cout << "Book issued successfully. Kindly return it within 7 days to avoid penalty." << endl;
+
+                        student.book_name = book_name;
+                        student.is_returned = false;
+                        student.save_record();
+                    } else {
+                        temp << str << '\n';
+                    }
+                } else {
+                    temp << str << '\n';
+                }
+            }
+
+            fin.close();
+            temp.close();
+            remove("book_storage.txt");
+            rename("temp.txt", "book_storage.txt");
+
+            if (!flag)
+                cout << "Sorry, this book is not available as of now." << endl;
+        } else {
+            cout << "Unable to open the file." << endl;
+        }
+    }
+
+    void return_book(StudentRecord& student) {
+        cin.ignore();
+        cout << "Which book do you want to return? ";
+        getline(cin, book_name);
+
+        if (!student.has_issued_books(student.user_regno)) {
+            cout << "You have yet to issue a book." << endl;
+            return;
+        }
+
+        ifstream fin("book_storage.txt");
+        ofstream temp("temp.txt");
+        string str;
+        bool flag = false;
+
+        if (fin.is_open() && temp.is_open()) {
+            while (getline(fin, str)) {
+                if (str.find(book_name) != string::npos) {
+                    flag = true;
+                    std::istringstream iss(str);
+                    string name, amount_str, author, isbn;
+                    getline(iss, name, ',');
+                    getline(iss, amount_str, ',');
+                    getline(iss, author, ',');
+                    getline(iss, isbn, ',');
+
+                    int aam = std::stoi(amount_str);
+                    aam++;
+                    temp << name << ',' << aam << ',' << author << ',' << isbn << '\n';
+                    cout << "Book returned successfully. We hope you visit us again in the future." << endl;
+
+                    update_student_record();
+                } else {
+                    temp << str << '\n';
+                }
+            }
+            fin.close();
+            temp.close();
+            remove("book_storage.txt");
+            rename("temp.txt", "book_storage.txt");
+
+            if (!flag)
+                cout << "Book Not Found!!" << endl;
+        } else {
+            cout << "Unable to open file" << endl;
+        }
+    }
+};
+
+int main() {
+    cout << "---------WELCOME TO THE LIBRARY MANAGEMENT SYSTEM---------" << endl;
+    sleep(1);
+    cout << "Choose an option: \n1. Student \n2. Admin\n";
+    char ch;
+    lms obj1;
+    record obj2;
+    StudentRecord str;
+
+    cin >> ch;
+    switch (ch) {
+        case '1': {
+            cin.ignore();
+            cout << "Enter your name: " << endl;
+            getline(cin, str.student_name);
+            cout << "Enter your Registration number: " << endl;
+            cin >> str.user_regno;
+            char cha;
+            while (true) {
+                sleep(1);
+                cout << "\n1 to issue a book \n2 to return a book\n3 to exit\n";
+                sleep(1);
+                cout << "\nEnter your choice.";
+                cin >> cha;
+                switch (cha) {
+                    case '1': {
+                        obj2.issue_book(str);
+                        cout << "\nDo you wish to continue? (Y/N)\n";
+                        char a;
+                        cin >> a;
+                        if (a == 'Y')
+                            continue;
+                        else
+                            break;
+                    }
+                    case '2': {
+                        obj2.return_book(str);
+                        cout << "\nDo you wish to continue? (Y/N)\n";
+                        char c;
+                        cin >> c;
+                        if (c == 'Y')
+                            continue;
+                        else
+                            break;
+                    }
+                    case '3': {
+                        cout << "Thanks for your time. This Program will shut down now." << endl;
+                        exit(0);
+                    }
+                    default:
+                        cout << "Invalid option. Try Again." << endl;
+                        continue;
+                }
+                break;
+            }
+            break;
+        }
+        case '2': {
+            cin.ignore();
+            string pass;
+            cout << "Enter the root password: " << endl;
+            getline(cin, pass);
+            int count = 1;
+            while (pass != obj1.admin_pass && count < 3) {
+                cout << "Wrong password. Try again. (" << 3 - count << " more tries left)" << endl;
+                getline(cin, pass);
+                count++;
+            }
+            if (count >= 3 && pass != obj1.admin_pass) {
+                cout << "Exceeded maximum 3 attempts. System shutting down.";
+                exit(0);
+            } else {
+                while (true) {
+                    cout << "\n1. Add a book record. \n2. Remove a book record. \n3. Update a book record. \n4 to exit. \nChoose an option." << endl;
+                    char b;
+                    cin >> b;
+                    switch (b) {
+                        case '1':
+                            obj2.add_bookinfo();
+                            break;
+                        case '2':
+                            obj2.delete_bookinfo();
+                            break;
+                        case '3':
+                            obj2.update_bookinfo();
+                            break;
+                        case  '4':
+                            cout << "Program will shut down now. Thanks for your time." << endl;
+                            exit(0);
+                        default:
+                            cout << "Invalid Input. Try again." << endl;
+                            continue;
+                    }
+
+                    while (true) {
+                        cout << "Do you wish to continue? (Y/N): ";
+                        char op;
+                        cin >> op;
+                        if (op == 'Y' || op == 'N') {
+                            if (op == 'N')
+                                return 0;
+                            break;
+                        } else {
+                            cout << "Invalid Input, Try Again." << endl;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        default:
+            cout << "Invalid Input. Try again." << endl;
+    }
+    return 0;
+}
