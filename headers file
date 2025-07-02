@@ -1,0 +1,14 @@
+#include<iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <unistd.h>
+#include <fstream>
+#include <sstream>
+using std::cout;
+using std::cin;
+using std::endl;
+using std::string;
+using std::ofstream;
+using std::ifstream;
+using std::istringstream;
